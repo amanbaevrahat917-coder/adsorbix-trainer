@@ -399,16 +399,28 @@ def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, 
                 temperature=temperature,
             )
             return extract_json(response.choices[0].message.content)
-        except Exception:
-            time.sleep(1.5 * (attempt + 1))
+        def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, temperature: float = 0.5) -> dict:
+    keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
+    current_key = random.choice(keys)
+    client = OpenAI(api_key=current_key, base_url=base_url)
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+        )
+        return extract_json(response.choices[0].message.content)
+    except Exception as e:
+        return {
+            "doctor_reply": f"⚠️ Ошибка API: {str(e)}",
+            "completed_stages": [],
+            "doctor_mood": "Ошибка",
+            "coach_hint": "Проверьте сообщение об ошибке выше.",
+            "is_finished": False,
+        }
 
-    return {
-        "doctor_reply": "⚠️ Сейчас на линии высокая нагрузка. Нажмите отправку ещё раз через пару секунд.",
-        "completed_stages": [],
-        "doctor_mood": "Ожидает",
-        "coach_hint": "Повторите отправку сообщения.",
-        "is_finished": False,
-    }
+
+    
 
 
 def generate_turn(api_keys_str: str, base_url: str, model: str, scenario: dict, chat_history: list) -> dict:
