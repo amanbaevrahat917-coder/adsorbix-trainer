@@ -548,7 +548,21 @@ with st.sidebar:
 # ==========================================
 # 6. ОСНОВНОЙ ЭКРАН ТРЕНАЖЁРА
 # ==========================================
-current_scenario = BASE_SCENARIOS[st.session_state.active_case_key]
+from uuid import uuid4
+
+if "visit_id" not in st.session_state:
+    st.session_state.visit_id = str(uuid4())
+
+employee = st.text_input(
+    "Ваше ФИО",
+    key="employee_name",
+    placeholder="Например, Майра Ибрагимова",
+    disabled=bool(st.session_state.messages),
+).strip()
+
+if not employee:
+    st.info("Введите ФИО, чтобы начать визит.")
+    st.stop()
 
 banner_pack_html = (
     f'<div class="hero-pack-wrap"><img src="{PACK_IMG_URL}" alt="Адсорбикс Экстра"></div>'
