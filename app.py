@@ -683,7 +683,7 @@ if len(st.session_state.messages) >= 2 and not st.session_state.final_report:
 
 if st.session_state.final_report:
     report = st.session_state.final_report
-     score = report.get("total_score")
+    score = report.get("total_score")
     if type(score) is not int or not 0 <= score <= 100:
         st.error("ИИ не вернул балл. Нажмите кнопку, чтобы повторить оценку.")
         if st.button("Повторить оценку"):
