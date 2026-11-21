@@ -1,4 +1,4 @@
-import json
+ import json
 import os
 import random
 import re
@@ -548,7 +548,7 @@ with st.sidebar:
 # ==========================================
 # 6. ОСНОВНОЙ ЭКРАН ТРЕНАЖЁРА
 # ==========================================
-from uuid import uuid4
+current_scenario = BASE_SCENARIOS[st.session_state.active_case_key]from uuid import uuid4
 
 if "visit_id" not in st.session_state:
     st.session_state.visit_id = str(uuid4())
