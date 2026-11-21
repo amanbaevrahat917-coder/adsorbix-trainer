@@ -2,7 +2,6 @@ import json
 import os
 import random
 import re
-import time
 import requests
 import streamlit as st
 from openai import OpenAI
@@ -44,7 +43,6 @@ CUSTOM_CSS = """
         font-family: 'Inter', sans-serif;
     }
 
-    /* Главный баннер в цветах упаковки Адсорбикс Экстра */
     .hero-banner {
         background: linear-gradient(135deg, #18181B 0%, #27272A 65%, #991B1B 100%);
         padding: 1.3rem 1.8rem;
@@ -87,7 +85,6 @@ CUSTOM_CSS = """
         object-fit: contain;
     }
 
-    /* Карточка продукта в сайдбаре */
     .product-sidebar-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -132,7 +129,6 @@ CUSTOM_CSS = """
         border-radius: 999px;
     }
 
-    /* Карточка врача */
     .doctor-card {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -162,7 +158,6 @@ CUSTOM_CSS = """
         color: #991B1B;
     }
 
-    /* Трекер СПИН */
     .spin-tracker {
         display: flex;
         gap: 8px;
@@ -193,7 +188,6 @@ CUSTOM_CSS = """
         box-shadow: 0 2px 6px rgba(220, 38, 38, 0.14);
     }
 
-    /* Подсказка тренера */
     .coach-box {
         background: #FFFBEB;
         border: 1px solid #FDE68A;
@@ -205,7 +199,6 @@ CUSTOM_CSS = """
         margin-bottom: 1rem;
     }
 
-    /* Карточка итоговой оценки */
     .score-card {
         background: linear-gradient(180deg, #FFFFFF 0%, #FEF2F2 100%);
         border: 2px solid #DC2626;
@@ -362,10 +355,10 @@ SPIN_STAGES = [
 def get_secret_safe(key: str, default: str = "") -> str:
     try:
         if key in st.secrets:
-            return str(st.secrets[key])
+            return str(st.secrets[key]).strip()
     except Exception:
         pass
-    return os.getenv(key, default)
+    return os.getenv(key, default).strip()
 
 
 def extract_json(text: str) -> dict:
@@ -389,23 +382,11 @@ def extract_json(text: str) -> dict:
 
 def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, temperature: float = 0.5) -> dict:
     keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
-    for attempt in range(4):
-        current_key = random.choice(keys)
-        client = OpenAI(api_key=current_key, base_url=base_url)
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-            )
-            return extract_json(response.choices[0].message.content)
-        def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, temperature: float = 0.5) -> dict:
-    keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
     current_key = random.choice(keys)
-    client = OpenAI(api_key=current_key, base_url=base_url)
+    client = OpenAI(api_key=current_key, base_url=base_url.strip())
     try:
         response = client.chat.completions.create(
-            model=model,
+            model=model.strip(),
             messages=messages,
             temperature=temperature,
         )
@@ -414,13 +395,10 @@ def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, 
         return {
             "doctor_reply": f"⚠️ Ошибка API: {str(e)}",
             "completed_stages": [],
-            "doctor_mood": "Ошибка",
-            "coach_hint": "Проверьте сообщение об ошибке выше.",
+            "doctor_mood": "Ошибка подключения",
+            "coach_hint": "Проверьте текст ошибки выше или настройки API в боковой панели.",
             "is_finished": False,
         }
-
-
-    
 
 
 def generate_turn(api_keys_str: str, base_url: str, model: str, scenario: dict, chat_history: list) -> dict:
@@ -565,8 +543,8 @@ with st.sidebar:
             st.markdown(BASE_SCENARIOS[st.session_state.active_case_key]["cheat_sheet"])
 
     default_key = get_secret_safe("LLM_API_KEY", "")
-    default_url = get_secret_safe("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
-    default_model = get_secret_safe("LLM_MODEL", "gemini-2.5-flash")
+    default_url = get_secret_safe("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+    default_model = get_secret_safe("LLM_MODEL", "llama-3.3-70b-versatile")
 
     with st.expander("🔑 Настройки API", expanded=not bool(default_key)):
         api_key = st.text_input("API Key (можно несколько через запятую)", value=default_key, type="password")
@@ -615,7 +593,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Прогресс-бар этапов СПИН
 done_set = set(st.session_state.completed_stages)
 next_active = None
 for code, _ in SPIN_STAGES:
