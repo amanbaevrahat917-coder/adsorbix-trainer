@@ -389,10 +389,6 @@ with st.sidebar:
 
     st.divider()
 
-    if coach_mode and not is_exam:
-        with st.expander("📋 Шпаргалка по кейсу", expanded=True):
-            st.markdown(BASE_SCENARIOS[st.session_state.active_case_key]["cheat_sheet"])
-
         api_key = get_secret_safe("LLM_API_KEY")
     base_url = "https://api.groq.com/openai/v1"
     model_name = "openai/gpt-oss-20b"
