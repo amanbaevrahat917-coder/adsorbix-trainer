@@ -389,7 +389,7 @@ with st.sidebar:
 
     st.divider()
 
-        api_key = get_secret_safe("LLM_API_KEY")
+    api_key = get_secret_safe("LLM_API_KEY")
     base_url = "https://api.groq.com/openai/v1"
     model_name = "openai/gpt-oss-20b"
 # ==========================================
