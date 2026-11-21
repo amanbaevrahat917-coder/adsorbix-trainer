@@ -185,7 +185,32 @@ def get_secret_safe(key: str, default: str = "") -> str:
         pass
     return os.getenv(key, default).strip()
 
+import hashlib
+import hmac
 
+entry_password = get_secret_safe("APP_PASSWORD")
+
+if not entry_password:
+    st.error("Вход пока закрыт. Добавьте APP_PASSWORD в настройках Streamlit.")
+    st.stop()
+
+password_version = hashlib.sha256(entry_password.encode()).hexdigest()
+
+if st.session_state.get("access_granted") != password_version:
+    st.title("Вход в СПИН-тренажёр")
+
+    with st.form("login_form", clear_on_submit=True):
+        entered = st.text_input("Пароль для входа", type="password")
+        submitted = st.form_submit_button("Войти")
+
+    if submitted:
+        if hmac.compare_digest(entered.encode(), entry_password.encode()):
+            st.session_state.access_granted = password_version
+            st.rerun()
+        else:
+            st.error("Пароль не подошёл. Попробуйте ещё раз.")
+
+    st.stop()
 def extract_json(text: str) -> dict:
     try:
         return json.loads(text)
