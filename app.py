@@ -449,7 +449,7 @@ if st.sidebar.checkbox("📊 Результаты сотрудников"):
             })
         st.caption("Последние 100 завершённых визитов")
         st.dataframe(table, hide_index=True, use_container_width=True)
-            st.subheader("История беседы")
+        st.subheader("История беседы")
 
         visits = {}
         for row, display_row in zip(rows, table):
