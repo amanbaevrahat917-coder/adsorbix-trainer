@@ -420,7 +420,7 @@ if st.sidebar.checkbox("📊 Результаты сотрудников"):
             f"{url}/rest/v1/spin_results",
             headers={"apikey": key},
             params={
-                "select": "finished_at,employee,scenario,score",
+                                "select": "visit_id,finished_at,employee,scenario,score",
                 "order": "finished_at.desc,visit_id.desc",
                 "limit": 100,
             },
@@ -449,6 +449,54 @@ if st.sidebar.checkbox("📊 Результаты сотрудников"):
             })
         st.caption("Последние 100 завершённых визитов")
         st.dataframe(table, hide_index=True, use_container_width=True)
+            st.subheader("История беседы")
+
+        visits = {}
+        for row, display_row in zip(rows, table):
+            visit_id = row["visit_id"]
+            date = display_row["Дата и время (Алматы)"]
+            visits[visit_id] = (
+                f"{row['employee']} · {date} · {row['scenario']} · "
+                f"{row['score']} баллов · № {visit_id[:8]}"
+            )
+
+        selected_visit = st.selectbox(
+            "Выберите визит сотрудника",
+            options=list(visits),
+            format_func=visits.get,
+            index=None,
+            placeholder="Начните вводить фамилию сотрудника",
+        )
+
+        if selected_visit:
+            try:
+                response = requests.get(
+                    f"{url}/rest/v1/spin_results",
+                    headers={"apikey": key},
+                    params={
+                        "select": "transcript",
+                        "visit_id": f"eq.{selected_visit}",
+                    },
+                    timeout=10,
+                )
+                response.raise_for_status()
+                records = response.json()
+            except requests.RequestException:
+                st.error("Не удалось загрузить переписку. Попробуйте ещё раз.")
+            else:
+                if not records:
+                    st.info("Этот визит уже удалён.")
+                elif not records[0].get("transcript"):
+                    st.info("У этого визита сохранён только балл.")
+                else:
+                    for message in records[0]["transcript"]:
+                        is_rep = message["role"] == "user"
+                        with st.chat_message(
+                            "user" if is_rep else "assistant",
+                            avatar="🧑‍💼" if is_rep else "👩‍⚕️",
+                        ):
+                            st.markdown("**Медпред**" if is_rep else "**Врач**")
+                            st.text(message["content"])
     else:
         st.info("Пока нет завершённых визитов.")
 
@@ -613,6 +661,7 @@ if st.session_state.final_report:
                     "employee": employee,
                     "scenario": current_scenario["title"],
                     "score": score,
+                    "transcript": st.session_state.messages,
                 },
                 timeout=10,
             )
