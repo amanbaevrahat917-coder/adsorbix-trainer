@@ -550,6 +550,63 @@ with st.sidebar:
 # 6. ОСНОВНОЙ ЭКРАН ТРЕНАЖЁРА
 # ==========================================
 current_scenario = BASE_SCENARIOS[st.session_state.active_case_key]
+if st.sidebar.checkbox("📊 Результаты сотрудников"):
+    import hmac
+
+    st.title("Результаты сотрудников")
+    password = st.text_input("Введите общий пароль", type="password")
+    expected = get_secret_safe("RESULTS_PASSWORD")
+
+    if not expected:
+        st.info("Добавьте RESULTS_PASSWORD в настройках Streamlit.")
+        st.stop()
+    if not password:
+        st.stop()
+    if not hmac.compare_digest(password.encode(), expected.encode()):
+        st.error("Пароль не подошёл. Попробуйте ещё раз.")
+        st.stop()
+
+    url = get_secret_safe("SUPABASE_URL").rstrip("/")
+    key = get_secret_safe("SUPABASE_SECRET_KEY")
+
+    try:
+        response = requests.get(
+            f"{url}/rest/v1/spin_results",
+            headers={"apikey": key},
+            params={
+                "select": "finished_at,employee,scenario,score",
+                "order": "finished_at.desc,visit_id.desc",
+                "limit": 100,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        rows = response.json()
+    except requests.RequestException:
+        st.error("Не удалось загрузить таблицу. Проверьте настройки Supabase.")
+        st.stop()
+
+    if rows:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        table = []
+        for row in rows:
+            date = datetime.fromisoformat(row["finished_at"].replace("Z", "+00:00"))
+            table.append({
+                "Дата и время (Алматы)": date.astimezone(
+                    ZoneInfo("Asia/Almaty")
+                ).strftime("%d.%m.%Y %H:%M"),
+                "ФИО": row["employee"],
+                "Сценарий": row["scenario"],
+                "Балл из 100": row["score"],
+            })
+        st.caption("Последние 100 завершённых визитов")
+        st.dataframe(table, hide_index=True, use_container_width=True)
+    else:
+        st.info("Пока нет завершённых визитов.")
+
+    st.stop()
 from uuid import uuid4
 
 if "visit_id" not in st.session_state:
