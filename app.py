@@ -36,6 +36,90 @@ def resolve_direct_image(url: str) -> str:
 PACK_IMG_URL = resolve_direct_image(POSTIMG_URL)
 
 CUSTOM_CSS = """
+/* Шапка тренажёра */
+.hero-banner {
+    background: linear-gradient(110deg, #202127 0%, #30282d 72%, #682733 100%);
+    border: 0;
+    border-left: 5px solid #ec4556;
+    border-radius: 18px;
+    padding: 24px 28px;
+    gap: 20px;
+    box-shadow: 0 6px 20px rgba(35, 29, 35, .12);
+}
+.hero-text h1 {
+    font-size: clamp(22px, 3vw, 34px);
+    line-height: 1.15;
+}
+.hero-text h1 span { color: #ff8993; }
+.hero-text p { color: #eee7e9; line-height: 1.5; }
+.hero-pack-wrap { padding: 8px 12px; box-shadow: none; }
+.hero-pack-wrap img { height: 80px; max-width: 140px; }
+
+/* Карточка врача */
+.doctor-card {
+    background: #fff;
+    border: 1px solid #dedee3;
+    border-left: 4px solid #a72e40;
+    border-radius: 14px;
+    padding: 18px 22px;
+}
+.doctor-name { color: #252630; font-size: 18px; }
+.doctor-meta { color: #505260; margin-top: 6px; line-height: 1.5; }
+.mood-badge {
+    margin-top: 10px;
+    background: #f1f1f4;
+    color: #484955;
+}
+
+/* Ход визита: текущий этап — красный, пройденный — зелёный */
+.spin-tracker {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+.spin-step {
+    min-width: 0;
+    display: grid;
+    place-content: center;
+    min-height: 46px;
+    padding: 7px 9px;
+    line-height: 1.3;
+    background: #f7f7f9;
+    color: #535461;
+}
+.spin-step.active {
+    background: #a72e40;
+    border-color: #a72e40;
+    color: white;
+    box-shadow: none;
+}
+.spin-step.done {
+    background: #eaf5ee;
+    border-color: #b4d7bf;
+    color: #26543a;
+}
+
+/* Подсказка тренера */
+.coach-box {
+    background: #fff7e9;
+    border: 1px solid #eed9b2;
+    border-left: 4px solid #bd8125;
+    color: #624519;
+    line-height: 1.5;
+}
+
+/* Экран телефона */
+@media (max-width: 700px) {
+    .hero-banner { padding: 16px; gap: 10px; }
+    .hero-text { flex: 1; min-width: 0; }
+    .hero-text h1 { font-size: 21px; }
+    .hero-text p { font-size: 13px; }
+    .hero-pack-wrap { padding: 5px; }
+    .hero-pack-wrap img { height: 50px; max-width: 65px; }
+    .doctor-card { padding: 14px; }
+    .spin-tracker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .spin-step:last-child { grid-column: 1 / -1; }
+}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
