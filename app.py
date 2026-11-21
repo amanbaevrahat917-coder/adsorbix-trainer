@@ -481,6 +481,7 @@ if "final_report" not in st.session_state:
 
 
 def reset_session(menu_key: str):
+    st.session_state.pop("visit_id", None)
     st.session_state.menu_choice = menu_key
     real_key = resolve_active_case(menu_key)
     st.session_state.active_case_key = real_key
@@ -549,6 +550,7 @@ with st.sidebar:
 # 6. ОСНОВНОЙ ЭКРАН ТРЕНАЖЁРА
 # ==========================================
 current_scenario = BASE_SCENARIOS[st.session_state.active_case_key]from uuid import uuid4
+from uuid import uuid4
 
 if "visit_id" not in st.session_state:
     st.session_state.visit_id = str(uuid4())
@@ -681,6 +683,45 @@ if len(st.session_state.messages) >= 2 and not st.session_state.final_report:
 
 if st.session_state.final_report:
     report = st.session_state.final_report
+     score = report.get("total_score")
+    if type(score) is not int or not 0 <= score <= 100:
+        st.error("ИИ не вернул балл. Нажмите кнопку, чтобы повторить оценку.")
+        if st.button("Повторить оценку"):
+            st.session_state.final_report = None
+            st.rerun()
+        st.stop()
+
+    if st.session_state.get("saved_visit") != st.session_state.visit_id:
+        url = get_secret_safe("SUPABASE_URL").rstrip("/")
+        secret = get_secret_safe("SUPABASE_SECRET_KEY")
+        if not url or not secret:
+            st.error("Для сохранения заполните обе настройки Supabase в Secrets.")
+            st.stop()
+
+        try:
+            response = requests.post(
+                f"{url}/rest/v1/spin_results",
+                headers={
+                    "apikey": secret,
+                    "Prefer": "resolution=ignore-duplicates,return=minimal",
+                },
+                json={
+                    "visit_id": st.session_state.visit_id,
+                    "employee": employee,
+                    "scenario": current_scenario["title"],
+                    "score": score,
+                },
+                timeout=10,
+            )
+            response.raise_for_status()
+            st.session_state.saved_visit = st.session_state.visit_id
+        except requests.RequestException:
+            st.error("Не удалось сохранить результат. Оставьте страницу открытой.")
+            if st.button("Повторить сохранение"):
+                st.rerun()
+            st.stop()
+
+    st.success(f"Результат сохранён: {employee} — {score} из 100.")
     st.markdown('<div class="score-card">', unsafe_allow_html=True)
     if is_exam:
         st.caption(f"Раскрытый кейс экзамена: **{current_scenario['title']}**")
