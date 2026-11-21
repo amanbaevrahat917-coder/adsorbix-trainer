@@ -467,7 +467,31 @@ if st.sidebar.checkbox("📊 Результаты сотрудников"):
             index=None,
             placeholder="Начните вводить фамилию сотрудника",
         )
+        if selected_visit:
+            with st.expander("🗑️ Удалить этот результат"):
+                st.write(visits[selected_visit])
+                st.caption("Будут удалены балл и переписка только этой попытки.")
 
+                with st.form(f"delete_visit_{selected_visit}"):
+                    confirmed = st.checkbox("Подтверждаю удаление")
+                    clicked = st.form_submit_button("Удалить результат")
+
+                if clicked and not confirmed:
+                    st.warning("Сначала поставьте галочку подтверждения.")
+
+                if clicked and confirmed:
+                    try:
+                        result = requests.delete(
+                            f"{url}/rest/v1/spin_results",
+                            headers={"apikey": key},
+                            params={"visit_id": f"eq.{selected_visit}"},
+                            timeout=10,
+                        )
+                        result.raise_for_status()
+                    except requests.RequestException:
+                        st.error("Не удалось подтвердить удаление. Обновите таблицу.")
+                    else:
+                        st.rerun()
         if selected_visit:
             try:
                 response = requests.get(
