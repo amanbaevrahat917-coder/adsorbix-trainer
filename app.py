@@ -542,15 +542,9 @@ with st.sidebar:
         with st.expander("📋 Шпаргалка по кейсу", expanded=True):
             st.markdown(BASE_SCENARIOS[st.session_state.active_case_key]["cheat_sheet"])
 
-    default_key = get_secret_safe("LLM_API_KEY", "")
-    default_url = get_secret_safe("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-    default_model = get_secret_safe("LLM_MODEL", "llama-3.3-70b-versatile")
-
-    with st.expander("🔑 Настройки API", expanded=not bool(default_key)):
-        api_key = st.text_input("API Key (можно несколько через запятую)", value=default_key, type="password")
-        base_url = st.text_input("Base URL", value=default_url)
-        model_name = st.text_input("Модель", value=default_model)
-
+        api_key = get_secret_safe("LLM_API_KEY")
+    base_url = "https://api.groq.com/openai/v1"
+    model_name = "openai/gpt-oss-20b"
 # ==========================================
 # 6. ОСНОВНОЙ ЭКРАН ТРЕНАЖЁРА
 # ==========================================
