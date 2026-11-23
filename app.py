@@ -230,27 +230,55 @@ def extract_json(text: str) -> dict:
     }
 
 
-def call_llm_safe(api_keys_str: str, base_url: str, model: str, messages: list, temperature: float = 0.5) -> dict:
-    keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
-    current_key = random.choice(keys)
-    client = OpenAI(api_key=current_key, base_url=base_url.strip())
-    try:
-        response = client.chat.completions.create(
-            model=model.strip(),
-            messages=messages,
-            temperature=temperature,
-        )
-        return extract_json(response.choices[0].message.content)
-    except Exception as e:
-        return {
-            "doctor_reply": f"⚠️ Ошибка API: {str(e)}",
-            "completed_stages": [],
-            "doctor_mood": "Ошибка подключения",
-            "coach_hint": "Проверьте текст ошибки выше или настройки API в боковой панели.",
-            "is_finished": False,
-        }
+def call_llm_safe(api_keys_str, base_url, model, messages, temperature=0.5):
+    from openai import APIConnectionError, APIStatusError
 
+    keys = [key.strip() for key in api_keys_str.split(",") if key.strip()]
+    if not keys:
+        raise ValueError("Администратору нужно проверить OPENROUTER_API_KEY.")
 
+    client = OpenAI(
+        api_key=random.choice(keys),
+        base_url=base_url.strip(),
+        timeout=45,
+        max_retries=0,
+    )
+    request_messages = [dict(message) for message in messages]
+    request_messages[0]["content"] += (
+        "\nОтветь одним объектом JSON. Не вызывай функции или инструменты."
+    )
+
+    for attempt in range(2):
+        try:
+            response = client.chat.completions.create(
+                model=model.strip(),
+                messages=request_messages,
+                temperature=temperature if attempt == 0 else 0.2,
+                response_format={"type": "json_object"},
+            )
+        except APIConnectionError:
+            raise ValueError("Сервис ИИ не ответил вовремя.") from None
+        except APIStatusError as error:
+            details = str(error).lower()
+            if error.status_code == 400 and "tool" in details and attempt == 0:
+                continue
+            if error.status_code == 429:
+                raise ValueError("Достигнут лимит запросов. Подождите немного.") from None
+            if error.status_code == 402:
+                raise ValueError("Администратору нужно проверить баланс OpenRouter.") from None
+            raise ValueError(f"Сервис ИИ вернул ошибку {error.status_code}.") from None
+
+        if response.choices:
+            message = response.choices[0].message
+            if message.content and not message.tool_calls:
+                try:
+                    data = json.loads(message.content)
+                except (TypeError, ValueError):
+                    data = None
+                if isinstance(data, dict):
+                    return data
+
+    raise ValueError("ИИ не смог подготовить ответ в нужном формате.")
 def generate_turn(api_keys_str: str, base_url: str, model: str, scenario: dict, chat_history: list) -> dict:
     orchestrator_prompt = f"""
 {scenario['system_prompt']}
